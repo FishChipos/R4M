@@ -27,7 +27,7 @@ def adjust():
         return
 
     # If one of the sensors sense black
-    elif (ir1_read == 0 ^ ir2_read == 0):
+    elif ((ir1_read == 0) != (ir2_read == 0)):
         # If the left sensor doesn't sense black then turn right
         if (ir1_read == 1):
             turn_direction = 0
@@ -46,6 +46,7 @@ def read_pins():
     ir2_read = pins.digital_read_pin(ir2)
     force_read = pins.digital_read_pin(force)
 
+# Utility function to set both gearboxes at the same time
 def set_gb(dir1, spd1, dir2, spd2):
     sensors.dd_mmotor(gb1_direction, dir1, gb1_speed, spd1)
     sensors.dd_mmotor(gb2_direction, dir2, gb2_speed, spd2)
@@ -115,8 +116,8 @@ while True:
         if (ir1_read == 0 and ir2_read == 0):
             pass
 
-        # Off course
-        elif (ir1_read == 0 ^ ir2_read == 0):
+        # Off course (only one sensor sees black)
+        elif ((ir1_read == 0) != (ir2_read == 0)):
             state = 1
 
         # Otherwise by default move forward

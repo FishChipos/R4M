@@ -8,6 +8,7 @@ pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
 //  MODIFIES: NONE
 //  MODIFIES: adjusting, turn_direction
 //  MODIFIES: ir1_read, ir2_read, force_read
+//  Utility function to set both gearboxes at the same time
 function set_gb(dir1: number, spd1: number, dir2: number, spd2: number) {
     sensors.DDMmotor(gb1_direction, dir1, gb1_speed, spd1)
     sensors.DDMmotor(gb2_direction, dir2, gb2_speed, spd2)
@@ -68,7 +69,7 @@ basic.forever(function adjust() {
     //  If not adjusting then don't do anything
     if (state != 1) {
         return
-    } else if (ir1_read == (0 ^ ir2_read) && (0 ^ ir2_read) == 0) {
+    } else if (ir1_read == 0 != (ir2_read == 0)) {
         //  If one of the sensors sense black
         //  If the left sensor doesn't sense black then turn right
         if (ir1_read == 1) {
@@ -98,8 +99,8 @@ while (true) {
         //  At intersection
         if (ir1_read == 0 && ir2_read == 0) {
             
-        } else if (ir1_read == (0 ^ ir2_read) && (0 ^ ir2_read) == 0) {
-            //  Off course
+        } else if (ir1_read == 0 != (ir2_read == 0)) {
+            //  Off course (only one sensor sees black)
             state = 1
         } else if (ir1_read == 1 && ir2_read == 1) {
             //  Otherwise by default move forward
