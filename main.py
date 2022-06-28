@@ -34,13 +34,13 @@ def move():
 
     if (ir1_read == 0 and ir2_read == 1):
         stop()
-        turn_direction = 0
+        turn_direction = 1
         isOffCourse = True
         adjust_angle()
     
-    if (ir1_read == 1 and ir2_read == 0):
+    elif (ir1_read == 1 and ir2_read == 0):
         stop()
-        turn_direction = 1
+        turn_direction = 0
         isOffCourse = True
         adjust_angle()
 

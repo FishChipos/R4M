@@ -130,14 +130,12 @@ basic.forever(function move() {
     set_gb(direction, speed, 1 - direction, speed)
     if (ir1_read == 0 && ir2_read == 1) {
         stop()
-        turn_direction = 0
+        turn_direction = 1
         isOffCourse = true
         adjust_angle()
-    }
-    
-    if (ir1_read == 1 && ir2_read == 0) {
+    } else if (ir1_read == 1 && ir2_read == 0) {
         stop()
-        turn_direction = 1
+        turn_direction = 0
         isOffCourse = true
         adjust_angle()
     }
