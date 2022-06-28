@@ -9,32 +9,44 @@ pins.set_pull(DigitalPin.P20, PinPullMode.PULL_UP)
 
 # MODIFIES: NONE
 def move():
-    global state
+    global active, state
     global direction, speed
 
-    # Only when moving
-    if (state == 0):
-        set_gb(direction, speed, 1 - direction, speed)
-
-# MODIFIES: adjusting, turn_direction
-def adjust():
-    global ir1_read, ir2_read
-    global state
-    global turn_direction, turn_speed
-
-    # If not adjusting then don't do anything
-    if (state != 1):
+    if active != 1:
         return
 
-    # If one of the sensors sense black
-    elif ((ir1_read == 0) != (ir2_read == 0)):
-        # If the left sensor doesn't sense black then turn right
-        if (ir1_read == 1):
+    # Only when moving
+    if state == 0:     
+        set_gb(direction, speed, 1 - direction, speed)
+    
+
+# MODIFIES: adjusting, turn_direction, state
+def adjust():
+    global ir1_read, ir2_read
+    global active, state
+    global turn_direction, turn_speed
+
+    if active != 1:
+        return
+
+    # If both sensors sense white then back on track (maybe)
+    if (ir1_read == 1 and ir2_read == 1 and state == 1):
+        state = 0
+
+    elif ((ir1_read == 0 or ir2_read == 0) and not (ir1_read == 0 and ir2_read == 0) and state == 0):
+        state = 1
+
+    # If adjusting
+    if (state == 1):
+        # If the left sensor senses black then turn right
+        if (ir1_read == 0 and ir2_read == 1):
             turn_direction = 0
 
         # Otherwise turn left
-        elif (ir2_read == 1):
+        elif (ir1_read == 1 and ir2_read == 0):
             turn_direction = 1
+
+        basic.show_number(turn_direction)
 
         set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
 
@@ -73,11 +85,11 @@ direction = 0
 turn_direction = 0
 
 # Speeds and offsets incase one side is faster then the other (they are)
-speed = 100
+speed = 60
 speed_offset1 = 0
 speed_offset2 = 0
 
-turn_speed = 150
+turn_speed = 120
 turn_speed_offset1 = 0
 turn_speed_offset2 = 0
 
@@ -99,8 +111,10 @@ basic.forever(read_pins)
 basic.forever(move)
 basic.forever(adjust)
 
-# Main loop
-while True:
+def main():
+    global ir1_read, ir2_read, force_read
+    global active, state
+
     # Once the button is pressed activate
     if (force_read == 0 and active == 0):
         active = 1
@@ -112,14 +126,8 @@ while True:
         state = 0
 
     if (active):
-        # At intersection
-        if (ir1_read == 0 and ir2_read == 0):
-            pass
+        basic.show_number(state)
 
-        # Off course (only one sensor sees black)
-        elif ((ir1_read == 0) != (ir2_read == 0)):
-            state = 1
+basic.forever(main)
 
-        # Otherwise by default move forward
-        elif (ir1_read == 1 and ir2_read == 1):
-            state = 0
+    

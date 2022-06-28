@@ -6,7 +6,7 @@
 //  Black magic don't touch
 pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
 //  MODIFIES: NONE
-//  MODIFIES: adjusting, turn_direction
+//  MODIFIES: adjusting, turn_direction, state
 //  MODIFIES: ir1_read, ir2_read, force_read
 //  Utility function to set both gearboxes at the same time
 function set_gb(dir1: number, spd1: number, dir2: number, spd2: number) {
@@ -30,10 +30,10 @@ let ir2_read = 0
 let direction = 0
 let turn_direction = 0
 //  Speeds and offsets incase one side is faster then the other (they are)
-let speed = 100
+let speed = 60
 let speed_offset1 = 0
 let speed_offset2 = 0
-let turn_speed = 150
+let turn_speed = 120
 let turn_speed_offset1 = 0
 let turn_speed_offset2 = 0
 //  Flags (0 -> false, 1 -> true)
@@ -56,6 +56,10 @@ basic.forever(function read_pins() {
 basic.forever(function move() {
     
     
+    if (active != 1) {
+        return
+    }
+    
     //  Only when moving
     if (state == 0) {
         set_gb(direction, speed, 1 - direction, speed)
@@ -66,25 +70,36 @@ basic.forever(function adjust() {
     
     
     
-    //  If not adjusting then don't do anything
-    if (state != 1) {
+    if (active != 1) {
         return
-    } else if (ir1_read == 0 != (ir2_read == 0)) {
-        //  If one of the sensors sense black
-        //  If the left sensor doesn't sense black then turn right
-        if (ir1_read == 1) {
+    }
+    
+    //  If both sensors sense white then back on track (maybe)
+    if (ir1_read == 1 && ir2_read == 1 && state == 1) {
+        state = 0
+    } else if ((ir1_read == 0 || ir2_read == 0) && !(ir1_read == 0 && ir2_read == 0) && state == 0) {
+        state = 1
+    }
+    
+    //  If adjusting
+    if (state == 1) {
+        //  If the left sensor senses black then turn right
+        if (ir1_read == 0 && ir2_read == 1) {
             turn_direction = 0
-        } else if (ir2_read == 1) {
+        } else if (ir1_read == 1 && ir2_read == 0) {
             //  Otherwise turn left
             turn_direction = 1
         }
         
+        basic.showNumber(turn_direction)
         set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
     }
     
 })
-//  Main loop
-while (true) {
+basic.forever(function main() {
+    let intersections: number[];
+    
+    
     //  Once the button is pressed activate
     if (force_read == 0 && active == 0) {
         active = 1
@@ -96,17 +111,7 @@ while (true) {
     }
     
     if (active) {
-        //  At intersection
-        if (ir1_read == 0 && ir2_read == 0) {
-            
-        } else if (ir1_read == 0 != (ir2_read == 0)) {
-            //  Off course (only one sensor sees black)
-            state = 1
-        } else if (ir1_read == 1 && ir2_read == 1) {
-            //  Otherwise by default move forward
-            state = 0
-        }
-        
+        basic.showNumber(state)
     }
     
-}
+})
