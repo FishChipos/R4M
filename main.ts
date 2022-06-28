@@ -43,6 +43,7 @@ function adjust_angle() {
         set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
         if (ir1_read == 1 && ir2_read == 1) {
             isOffCourse = false
+            stop()
             return
         }
         
@@ -76,7 +77,7 @@ let ir2_read = 0
 let direction = 0
 let turn_direction = 0
 //  Speeds and offsets incase one side is faster then the other (they are)
-let speed = 250
+let speed = 100
 let speed_offset1 = 0
 let speed_offset2 = 0
 let turn_speed = 150
@@ -117,41 +118,28 @@ basic.forever(function main() {
         
     }
     
-    if (!atIntersection && !isOffCourse) {
-        isMoving = true
-        isTurning = false
-    }
-    
 })
-basic.forever(function check_angle() {
-    
-    
-    if (isOffCourse) {
-        basic.showNumber(1)
-    } else {
-        basic.showNumber(0)
-    }
-    
-    if (ir1_read == 1 && ir2_read == 0) {
-        turn_direction = 1
-        isMoving = false
-        isOffCourse = true
-    } else if (ir1_read == 0 && ir2_read == 1) {
-        turn_direction = 0
-        isMoving = false
-        isOffCourse = true
-    }
-    
-    if (isOffCourse) {
-        adjust_angle()
-    }
-    
-})
+basic.forever(adjust_angle)
 basic.forever(function move() {
+    let turn_direction: number;
     
-    if (!isMoving || isTurning || !active) {
+    if (!isMoving || isTurning || isOffCourse || !active) {
         return
     }
     
     set_gb(direction, speed, 1 - direction, speed)
+    if (ir1_read == 0 && ir2_read == 1) {
+        stop()
+        turn_direction = 0
+        isOffCourse = true
+        adjust_angle()
+    }
+    
+    if (ir1_read == 1 && ir2_read == 0) {
+        stop()
+        turn_direction = 1
+        isOffCourse = true
+        adjust_angle()
+    }
+    
 })

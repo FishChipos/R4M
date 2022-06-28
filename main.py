@@ -24,17 +24,25 @@ def main():
         # atIntersection = True
         pass
 
-    if (not atIntersection and not isOffCourse):
-        isMoving = True
-        isTurning = False
-
 def move():
-    global isMoving, isTurning, direction
+    global isMoving, isTurning, isOffCourse, direction
 
-    if (not isMoving or isTurning or not active):
+    if (not isMoving or isTurning or isOffCourse or not active):
         return
 
     set_gb(direction, speed, 1 - direction, speed)
+
+    if (ir1_read == 0 and ir2_read == 1):
+        stop()
+        turn_direction = 0
+        isOffCourse = True
+        adjust_angle()
+    
+    if (ir1_read == 1 and ir2_read == 0):
+        stop()
+        turn_direction = 1
+        isOffCourse = True
+        adjust_angle()
 
 def turn():
     global isTurning, atIntersection, turn_direction
@@ -73,29 +81,6 @@ def read_sensors():
     ir2_read = pins.digital_read_pin(ir2)
     force_read = pins.digital_read_pin(force)
 
-def check_angle():
-    global isMoving, isTurning, active, turn_direction, isOffCourse
-    global ir1_read, ir2_read
-
-    if isOffCourse:
-        basic.show_number(1)
-
-    else:
-        basic.show_number(0)
-
-    if (ir1_read == 1 and ir2_read == 0):
-        turn_direction = 1
-        isMoving = False
-        isOffCourse = True
-
-    elif (ir1_read == 0 and ir2_read == 1):
-        turn_direction = 0
-        isMoving = False
-        isOffCourse = True
-
-    if isOffCourse:
-        adjust_angle()
-
 def adjust_angle():
     global turn_direction, turn_speed, isOffCourse, ir1_read, ir2_read
 
@@ -104,6 +89,7 @@ def adjust_angle():
 
         if (ir1_read == 1 and ir2_read == 1):
             isOffCourse = False
+            stop()
             return
 
 # Utility
@@ -137,7 +123,7 @@ direction = 0
 turn_direction = 0
 
 # Speeds and offsets incase one side is faster then the other (they are)
-speed = 250
+speed = 100
 speed_offset1 = 0
 speed_offset2 = 0
 
@@ -161,5 +147,5 @@ turn_counter2 = 0
 
 basic.forever(read_sensors)
 basic.forever(main)
-basic.forever(check_angle)
+basic.forever(adjust_angle)
 basic.forever(move)
