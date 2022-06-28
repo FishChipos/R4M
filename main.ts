@@ -1,15 +1,52 @@
 //  NOTES:
 //  1 is left and back, 0 is right and front
+//  1 is black, 0 is white
 //  Black magic don't touch
 pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
 //  Main logic and callback functions
-function move() {
+function turn() {
+    let isMoving: boolean;
     
-    if (!isMoving || isTurning || !active) {
+    
+    
+    if (!isTurning || isMoving || !active) {
         return
     }
     
-    set_gb(direction, speed, 1 - direction, speed)
+    set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
+    if (turn_counter1 + turn_counter2 >= 4) {
+        isTurning = false
+        isMoving = true
+        atIntersection = false
+        turn_counter1 = 0
+        turn_counter2 = 0
+        return
+    }
+    
+    if (ir1_read == 0 && turn_counter1 == 0) {
+        turn_counter1 = 1
+    } else if (ir1_read == 1 && turn_counter1 == 1) {
+        turn_counter1 = 2
+    }
+    
+    if (ir2_read == 0 && turn_counter2 == 0) {
+        turn_counter2 = 1
+    } else if (ir2_read == 1 && turn_counter2 == 1) {
+        turn_counter2 = 2
+    }
+    
+}
+
+function adjust_angle() {
+    
+    while (isOffCourse) {
+        set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
+        if (ir1_read == 1 && ir2_read == 1) {
+            isOffCourse = false
+            return
+        }
+        
+    }
 }
 
 //  Utility
@@ -39,10 +76,10 @@ let ir2_read = 0
 let direction = 0
 let turn_direction = 0
 //  Speeds and offsets incase one side is faster then the other (they are)
-let speed = 100
+let speed = 250
 let speed_offset1 = 0
 let speed_offset2 = 0
-let turn_speed = 250
+let turn_speed = 150
 let turn_speed_offset1 = 0
 let turn_speed_offset2 = 0
 let active = false
@@ -62,7 +99,6 @@ basic.forever(function read_sensors() {
     force_read = pins.digitalReadPin(force)
 })
 basic.forever(function main() {
-    let turn_direction: number;
     
     
     
@@ -77,81 +113,45 @@ basic.forever(function main() {
     }
     
     if (ir1_read == 0 && ir2_read == 0) {
-        atIntersection = true
-    }
-    
-    if (!atIntersection) {
-        isMoving = true
-    }
-    
-    if (atIntersection && !isTurning) {
-        isTurning = true
-        intersectionCount += 1
-        atIntersection = false
-        if (intersectionCount == 1) {
-            turn_direction = 1
-            
-        } else if (intersectionCount == 2) {
-            
-        } else if (intersectionCount == 3) {
-            
-        } else if (intersectionCount == 4) {
-            
-        }
+        //  atIntersection = True
         
+    }
+    
+    if (!atIntersection && !isOffCourse) {
+        isMoving = true
+        isTurning = false
     }
     
 })
 basic.forever(function check_angle() {
-    let isOffCourse: boolean;
-    if (isTurning || !active) {
-        return
-    }
     
-    if (ir1_read == 0 && ir2_read == 1) {
-        isOffCourse = true
-    } else if (ir1_read == 1 && ir2_read == 0) {
-        isOffCourse = true
+    
+    if (isOffCourse) {
+        basic.showNumber(1)
     } else {
-        isOffCourse = false
+        basic.showNumber(0)
+    }
+    
+    if (ir1_read == 1 && ir2_read == 0) {
+        turn_direction = 1
+        isMoving = false
+        isOffCourse = true
+    } else if (ir1_read == 0 && ir2_read == 1) {
+        turn_direction = 0
+        isMoving = false
+        isOffCourse = true
+    }
+    
+    if (isOffCourse) {
+        adjust_angle()
     }
     
 })
-basic.forever(function adjust_angle() {
+basic.forever(function move() {
     
-    
-    if (!isOffCourse || !active) {
+    if (!isMoving || isTurning || !active) {
         return
     }
     
-    set_gb(direction, turn_speed, direction, turn_speed)
-})
-basic.forever(function turn() {
-    
-    
-    
-    if (!isTurning || !active) {
-        return
-    }
-    
-    set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
-    if (turn_counter1 + turn_counter2 >= 4) {
-        isTurning = false
-        turn_counter1 = 0
-        turn_counter2 = 0
-        return
-    }
-    
-    if (ir1_read == 0 && turn_counter1 == 0) {
-        turn_counter1 = 1
-    } else if (ir1_read == 1 && turn_counter1 == 1) {
-        turn_counter1 = 2
-    }
-    
-    if (ir2_read == 0 && turn_counter2 == 0) {
-        turn_counter2 = 1
-    } else if (ir2_read == 1 && turn_counter2 == 1) {
-        turn_counter2 = 2
-    }
-    
+    set_gb(direction, speed, 1 - direction, speed)
 })

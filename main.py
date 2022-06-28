@@ -1,5 +1,6 @@
 # NOTES:
 # 1 is left and back, 0 is right and front
+# 1 is black, 0 is white
 
 # Black magic don't touch
 pins.set_pull(DigitalPin.P20, PinPullMode.PULL_UP)
@@ -20,30 +21,12 @@ def main():
         return
 
     if (ir1_read == 0 and ir2_read == 0):
-        atIntersection = True
+        # atIntersection = True
+        pass
 
-    if (not atIntersection):
+    if (not atIntersection and not isOffCourse):
         isMoving = True
-
-    if (atIntersection and not isTurning):
-        
-        isTurning = True
-        intersectionCount += 1
-
-        atIntersection = False
-
-        if intersectionCount == 1:
-            turn_direction = 1
-            pass
-
-        elif intersectionCount == 2:
-            pass
-
-        elif intersectionCount == 3:
-            pass
-
-        elif intersectionCount == 4:
-            pass
+        isTurning = False
 
 def move():
     global isMoving, isTurning, direction
@@ -54,17 +37,19 @@ def move():
     set_gb(direction, speed, 1 - direction, speed)
 
 def turn():
-    global isTurning, turn_direction
+    global isTurning, atIntersection, turn_direction
     global ir1_read, ir2_read 
     global turn_counter1, turn_counter2
 
-    if (not isTurning or not active):
+    if (not isTurning or isMoving or not active):
         return
 
     set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
 
     if (turn_counter1 + turn_counter2 >= 4):
         isTurning = False
+        isMoving = True
+        atIntersection = False
         turn_counter1 = 0
         turn_counter2 = 0
         return
@@ -89,26 +74,37 @@ def read_sensors():
     force_read = pins.digital_read_pin(force)
 
 def check_angle():
-    if (isTurning or not active):
-        return
+    global isMoving, isTurning, active, turn_direction, isOffCourse
+    global ir1_read, ir2_read
 
-    if (ir1_read == 0 and ir2_read == 1):
-        isOffCourse = True
-
-    elif (ir1_read == 1 and ir2_read == 0):
-        isOffCourse = True
+    if isOffCourse:
+        basic.show_number(1)
 
     else:
-        isOffCourse = False
+        basic.show_number(0)
+
+    if (ir1_read == 1 and ir2_read == 0):
+        turn_direction = 1
+        isMoving = False
+        isOffCourse = True
+
+    elif (ir1_read == 0 and ir2_read == 1):
+        turn_direction = 0
+        isMoving = False
+        isOffCourse = True
+
+    if isOffCourse:
+        adjust_angle()
 
 def adjust_angle():
-    global isOffCourse
-    global direction
+    global turn_direction, turn_speed, isOffCourse, ir1_read, ir2_read
 
-    if (not isOffCourse or not active):
-        return
+    while isOffCourse:
+        set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
 
-    set_gb(direction, turn_speed, direction, turn_speed)
+        if (ir1_read == 1 and ir2_read == 1):
+            isOffCourse = False
+            return
 
 # Utility
 def stop():
@@ -141,11 +137,11 @@ direction = 0
 turn_direction = 0
 
 # Speeds and offsets incase one side is faster then the other (they are)
-speed = 100
+speed = 250
 speed_offset1 = 0
 speed_offset2 = 0
 
-turn_speed = 250
+turn_speed = 150
 turn_speed_offset1 = 0
 turn_speed_offset2 = 0
 
@@ -166,5 +162,4 @@ turn_counter2 = 0
 basic.forever(read_sensors)
 basic.forever(main)
 basic.forever(check_angle)
-basic.forever(adjust_angle)
-basic.forever(turn)
+basic.forever(move)
