@@ -7,48 +7,109 @@
 # Black magic don't touch
 pins.set_pull(DigitalPin.P20, PinPullMode.PULL_UP)
 
-# MODIFIES: NONE
+# MODIFIES: state
 def move():
     global active, state
     global direction, speed
 
-    if active != 1:
-        return
-
-    # Only when moving
-    if state == 0:     
-        set_gb(direction, speed, 1 - direction, speed)
+    state = 0
     
+    set_gb(direction, speed, 1 - direction, speed)
 
-# MODIFIES: adjusting, turn_direction, state
-def adjust():
-    global ir1_read, ir2_read
+# MODIFIES: state
+def turn():
     global active, state
     global turn_direction, turn_speed
+    global ir1_read, ir2_read
+
+    state = 1
+
+    counter1 = 0
+    counter2 = 0
+
+    while True:
+        set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
+
+        basic.pause(80)
+
+        stop()
+
+        basic.show_number(counter1 + counter2)
+
+        if (counter1 + counter2 >= 4):
+            stop()
+            return
+
+        if (counter1 == 0 and ir1_read == 0):
+            counter1 = 1
+
+        if (counter1 == 1 and ir1_read == 1):
+            counter1 = 2
+
+        if (counter2 == 0 and ir2_read == 0):
+            counter2 = 1
+
+        if (counter2 == 1 and ir2_read == 1):
+            counter2 = 2
+
+# MODIFIES: state
+def stop():
+    global active, state
+    
+    state = 2
+
+    set_gb(0, 0, 0, 0)
+    
+
+# MODIFIES: turn_direction
+def adjust():
+    global ir1_read, ir2_read
+    global adjust_ac
+    global intersection_seen
+    global active, state
+    global adjust_speed
 
     if active != 1:
         return
 
-    # If both sensors sense white then back on track (maybe)
-    if (ir1_read == 1 and ir2_read == 1 and state == 1):
-        state = 0
+    if adjust_ac != 1:
+        return
 
-    elif ((ir1_read == 0 or ir2_read == 0) and not (ir1_read == 0 and ir2_read == 0) and state == 0):
-        state = 1
+    if state != 0:
+        return
 
-    # If adjusting
-    if (state == 1):
-        # If the left sensor senses black then turn right
+    if (check_angle() == 2):
+        intersection_seen = 1
+        return
+
+    elif (check_angle()):
+        stop()
+
         if (ir1_read == 0 and ir2_read == 1):
-            turn_direction = 0
+            set_gb(0, adjust_speed, 0, adjust_speed)
+            state = 0
 
-        # Otherwise turn left
-        elif (ir1_read == 1 and ir2_read == 0):
-            turn_direction = 1
+        if (ir1_read == 1 and ir2_read == 0):
+            set_gb(1, adjust_speed, 1, adjust_speed)
+            state = 0
 
-        basic.show_number(turn_direction)
+    else:
+        move()
 
-        set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
+# For use with adjusting
+def check_angle():
+    global ir1_read, ir2_read
+
+    if (ir1_read == 1 and ir2_read == 1):
+        return 2
+
+    elif (ir1_read == 0 and ir2_read == 0):
+        return 0
+
+    elif (ir1_read == 0 or ir2_read == 0):
+        return 1
+
+    return 0
 
 # MODIFIES: ir1_read, ir2_read, force_read
 def read_pins():
@@ -62,6 +123,15 @@ def read_pins():
 def set_gb(dir1, spd1, dir2, spd2):
     sensors.dd_mmotor(gb1_direction, dir1, gb1_speed, spd1)
     sensors.dd_mmotor(gb2_direction, dir2, gb2_speed, spd2)
+
+# Check if its at intersection
+def check_inter():
+    global ir1_read, ir2_read
+      
+    if (ir1_read == 1 and ir2_read == 1):
+        return True
+
+    return False
 
 # Pins
 force = DigitalPin.P20
@@ -85,49 +155,152 @@ direction = 0
 turn_direction = 0
 
 # Speeds and offsets incase one side is faster then the other (they are)
-speed = 60
-speed_offset1 = 0
-speed_offset2 = 0
-
-turn_speed = 120
-turn_speed_offset1 = 0
-turn_speed_offset2 = 0
+speed = 75
+turn_speed = 180
+adjust_speed = 120
 
 # Flags (0 -> false, 1 -> true)
 active = 0
+main_ac = 1
+adjust_ac = 1
+intersection_seen = 0
 
-# State (0 -> moving, 1 -> adjusting, 2 -> turning)
+# State (0 -> moving, 1 -> turning, 2 -> still, 3 -> special)
 state = 0
 
-# Array containing flags for each intersection passed
-# E.G. 
-# when passing the first intersection the first element will be set to one
-# when passing the second intersection the second element will be set to one
-# and so on
-intersections = [0, 0, 0, 0]
+# Intersection count
+intersectionCount = 0
 
 # Run these functions in the background
 basic.forever(read_pins)
-basic.forever(move)
 basic.forever(adjust)
 
-def main():
-    global ir1_read, ir2_read, force_read
-    global active, state
+def start():
+    global force_read
+    global active
 
     # Once the button is pressed activate
     if (force_read == 0 and active == 0):
         active = 1
+        basic.pause(500)
+        first()
 
     elif (force_read == 0 and active == 1):
         # Reset
-        active = 0
-        intersections = [0, 0, 0, 0]
-        state = 0
+        control.reset()
 
-    if (active):
-        basic.show_number(state)
+def main():
+    global ir1_read, ir2_read, force_read
+    global active, state
+    global intersectionCount
 
-basic.forever(main)
+    basic.show_number(state)
 
-    
+    first()
+
+basic.forever(start)
+
+# Algorithms for each section
+def first():
+    global main_ac, adjust_ac, intersection_seen
+    global direction, turn_direction
+    global intersectionCount
+
+    basic.show_number(9)
+
+    main_ac = 0
+
+    stop()
+
+    direction = 0
+    move()
+
+    while True:
+        if (check_inter() or intersection_seen):
+            intersection_seen = 0
+            stop()
+
+            # Move forward a little
+            move()
+            basic.pause(800)
+
+            stop()
+
+            # Turn left
+            turn_direction = 1
+            turn()
+
+            move()
+            basic.pause(4000)
+
+            stop()
+
+            direction = 1
+            move()
+            basic.pause(8000)
+
+            stop()
+
+            adjust_ac = 0
+
+            direction = 0
+            move()
+            basic.pause(4000)
+
+            stop()
+
+            turn_direction = 0
+            turn()
+
+            intersectionCount += 1
+
+            second()
+
+        basic.pause(20)
+
+def second():
+    global main_ac, adjust_ac, intersection_seen
+    global direction, turn_direction
+    global intersectionCount
+
+    basic.show_number(8)
+
+    stop()
+
+    direction = 0
+
+    move()
+
+    while True:
+        if (check_inter() or intersection_seen):
+            intersection_seen = 0
+            stop()
+
+            move()
+            basic.pause(800)
+
+            stop()
+
+            turn_direction = 1
+            turn()
+
+            move()
+            basic.pause(4000)
+
+            stop()
+
+            direction = 1
+            move()
+            basic.pause(4000)
+
+            stop()
+
+            turn_direction = 0
+            turn()
+
+            intersectionCount += 1
+
+            third()
+
+def third():
+    pass
