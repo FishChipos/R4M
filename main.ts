@@ -6,29 +6,30 @@
 //  Black magic don't touch
 pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
 //  MODIFIES: state
-function move(time: number = 0) {
-    let last_move_time: number;
+function move() {
     
     
     
     state = 0
-    if (time == 0) {
-        set_gb(direction, speed, 1 - direction, speed)
-    } else {
+    set_gb(direction, speed, 1 - direction, speed)
+    /** 
+    else:
         move_elapsed = 0
+
         last_move_time = control.millis()
-        while (move_elapsed <= time) {
+
+        while move_elapsed <= time:
             set_gb(direction, speed, 1 - direction, speed)
+
             move_elapsed += curr_time - last_move_time
-            if (adjust_elapsed != 0) {
+
+            if (adjust_elapsed != 0):
                 move_elapsed -= adjust_elapsed
                 adjust_elapsed = 0
-            }
-            
-        }
+
         stop()
-    }
     
+ */
 }
 
 //  MODIFIES: state
@@ -77,6 +78,7 @@ function stop() {
 }
 
 //  MODIFIES: turn_direction
+//  adjust_elapsed += curr_time - last_adjust_time
 //  For use with adjusting
 function check_angle(): number {
     
@@ -95,6 +97,11 @@ function check_angle(): number {
 
 //  MODIFIES: ir1_read, ir2_read, force_read
 //  MODIFIES: curr_time
+function update_time() {
+    
+    curr_time = control.millis()
+}
+
 //  Utility function to set both gearboxes at the same time
 function set_gb(dir1: number, spd1: number, dir2: number, spd2: number) {
     sensors.DDMmotor(gb1_direction, dir1, gb1_speed, spd1)
@@ -153,10 +160,7 @@ basic.forever(function read_pins() {
     ir2_read = pins.digitalReadPin(ir2)
     force_read = pins.digitalReadPin(force)
 })
-basic.forever(function update_time() {
-    
-    curr_time = control.millis()
-})
+//  basic.forever(update_time)
 basic.forever(function adjust() {
     
     
@@ -181,7 +185,7 @@ basic.forever(function adjust() {
         return
     } else if (check_angle()) {
         stop()
-        last_adjust_time = control.millis()
+        //  last_adjust_time = control.millis()
         if (ir1_read == 0 && ir2_read == 1) {
             set_gb(0, adjust_speed, 0, adjust_speed)
             state = 0
@@ -192,7 +196,6 @@ basic.forever(function adjust() {
             state = 0
         }
         
-        adjust_elapsed += curr_time - last_adjust_time
     }
     
 })

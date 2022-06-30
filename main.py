@@ -8,16 +8,16 @@
 pins.set_pull(DigitalPin.P20, PinPullMode.PULL_UP)
 
 # MODIFIES: state
-def move(time = 0):
+def move():
     global active, state
     global direction, speed
     global curr_time, move_elapsed, adjust_elapsed
 
     state = 0
     
-    if (time == 0):
-        set_gb(direction, speed, 1 - direction, speed)
+    set_gb(direction, speed, 1 - direction, speed)
 
+    '''
     else:
         move_elapsed = 0
 
@@ -33,6 +33,7 @@ def move(time = 0):
                 adjust_elapsed = 0
 
         stop()
+    '''
 
 # MODIFIES: state
 def turn():
@@ -106,7 +107,7 @@ def adjust():
     elif (check_angle()):
         stop()
 
-        last_adjust_time = control.millis()
+        # last_adjust_time = control.millis()
 
         if (ir1_read == 0 and ir2_read == 1):
             set_gb(0, adjust_speed, 0, adjust_speed)
@@ -116,7 +117,7 @@ def adjust():
             set_gb(1, adjust_speed, 1, adjust_speed)
             state = 0
 
-        adjust_elapsed += curr_time - last_adjust_time
+        # adjust_elapsed += curr_time - last_adjust_time
 
 # For use with adjusting
 def check_angle():
@@ -214,7 +215,7 @@ last_adjust_time = 0
 
 # Run these functions in the background
 basic.forever(read_pins)
-basic.forever(update_time)
+# basic.forever(update_time)
 basic.forever(adjust)
 
 def reset_var():
