@@ -6,11 +6,29 @@
 //  Black magic don't touch
 pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
 //  MODIFIES: state
-function move() {
+function move(time: number = 0) {
+    let last_move_time: number;
+    
     
     
     state = 0
-    set_gb(direction, speed, 1 - direction, speed)
+    if (time == 0) {
+        set_gb(direction, speed, 1 - direction, speed)
+    } else {
+        move_elapsed = 0
+        last_move_time = control.millis()
+        while (move_elapsed <= time) {
+            set_gb(direction, speed, 1 - direction, speed)
+            move_elapsed += curr_time - last_move_time
+            if (adjust_elapsed != 0) {
+                move_elapsed -= adjust_elapsed
+                adjust_elapsed = 0
+            }
+            
+        }
+        stop()
+    }
+    
 }
 
 //  MODIFIES: state
@@ -22,9 +40,9 @@ function turn() {
     let counter1 = 0
     let counter2 = 0
     while (true) {
-        set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
         basic.pause(80)
         stop()
+        //  Don't delete this
         basic.showNumber(counter1 + counter2)
         if (counter1 + counter2 >= 4) {
             stop()
@@ -47,6 +65,7 @@ function turn() {
             counter2 = 2
         }
         
+        set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
     }
 }
 
@@ -61,6 +80,8 @@ function stop() {
 //  For use with adjusting
 function check_angle(): number {
     
+    //  Time for sensors to update
+    basic.pause(20)
     if (ir1_read == 1 && ir2_read == 1) {
         return 2
     } else if (ir1_read == 0 && ir2_read == 0) {
@@ -73,6 +94,7 @@ function check_angle(): number {
 }
 
 //  MODIFIES: ir1_read, ir2_read, force_read
+//  MODIFIES: curr_time
 //  Utility function to set both gearboxes at the same time
 function set_gb(dir1: number, spd1: number, dir2: number, spd2: number) {
     sensors.DDMmotor(gb1_direction, dir1, gb1_speed, spd1)
@@ -110,13 +132,20 @@ let turn_speed = 180
 let adjust_speed = 120
 //  Flags (0 -> false, 1 -> true)
 let active = 0
-let main_ac = 1
 let adjust_ac = 1
 let intersection_seen = 0
 //  State (0 -> moving, 1 -> turning, 2 -> still, 3 -> special)
 let state = 0
 //  Intersection count
 let intersectionCount = 0
+//  Current and last time for counting time elapsed
+let curr_time = control.millis()
+let last_time = control.millis()
+//  Time it took for robot to finish one move or adjust operation
+let move_elapsed = 0
+let adjust_elapsed = 0
+let last_move_time = 0
+let last_adjust_time = 0
 //  Run these functions in the background
 basic.forever(function read_pins() {
     
@@ -124,7 +153,12 @@ basic.forever(function read_pins() {
     ir2_read = pins.digitalReadPin(ir2)
     force_read = pins.digitalReadPin(force)
 })
+basic.forever(function update_time() {
+    
+    curr_time = control.millis()
+})
 basic.forever(function adjust() {
+    
     
     
     
@@ -147,6 +181,7 @@ basic.forever(function adjust() {
         return
     } else if (check_angle()) {
         stop()
+        last_adjust_time = control.millis()
         if (ir1_read == 0 && ir2_read == 1) {
             set_gb(0, adjust_speed, 0, adjust_speed)
             state = 0
@@ -157,11 +192,16 @@ basic.forever(function adjust() {
             state = 0
         }
         
-    } else {
-        move()
+        adjust_elapsed += curr_time - last_adjust_time
     }
     
 })
+function reset_var() {
+    
+    adjust_ac = 1
+    intersection_seen = 0
+}
+
 function main() {
     
     
@@ -190,32 +230,45 @@ function first() {
     
     
     basic.showNumber(9)
-    main_ac = 0
+    let main_ac = 0
     stop()
     direction = 0
     move()
     while (true) {
+        basic.pause(20)
         if (check_inter() || intersection_seen) {
             intersection_seen = 0
-            stop()
+            adjust_ac = 0
             //  Move forward a little
+            direction = 0
             move()
-            basic.pause(800)
+            basic.pause(900)
             stop()
             //  Turn left
             turn_direction = 1
             turn()
-            move()
-            basic.pause(4000)
-            stop()
-            direction = 1
-            move()
-            basic.pause(8000)
-            stop()
-            adjust_ac = 0
+            adjust_ac = 1
             direction = 0
             move()
+            basic.pause(2000)
+            stop()
+            adjust_ac = 0
+            direction = 1
+            move()
             basic.pause(4000)
+            stop()
+            direction = 0
+            move()
+            intersection_seen = 0
+            while (!(check_inter() || intersection_seen)) {
+                basic.pause(20)
+            }
+            intersection_seen = 0
+            adjust_ac = 1
+            direction = 0
+            move()
+            basic.pause(1000)
+            adjust_ac = 0
             stop()
             turn_direction = 0
             turn()
@@ -223,7 +276,6 @@ function first() {
             second()
         }
         
-        basic.pause(20)
     }
 }
 
@@ -231,25 +283,38 @@ function second() {
     
     
     
+    reset_var()
     basic.showNumber(8)
     stop()
     direction = 0
     move()
     while (true) {
+        basic.pause(20)
         if (check_inter() || intersection_seen) {
             intersection_seen = 0
-            stop()
+            direction = 0
             move()
-            basic.pause(800)
+            basic.pause(900)
             stop()
             turn_direction = 1
             turn()
+            direction = 0
             move()
-            basic.pause(4000)
+            basic.pause(2000)
             stop()
+            adjust_ac = 0
             direction = 1
             move()
-            basic.pause(4000)
+            intersection_seen = 0
+            while (!(check_inter() || intersection_seen)) {
+                basic.pause(20)
+            }
+            intersection_seen = 0
+            adjust_ac = 1
+            direction = 0
+            move()
+            basic.pause(1000)
+            adjust_ac = 0
             stop()
             turn_direction = 0
             turn()

@@ -8,13 +8,31 @@
 pins.set_pull(DigitalPin.P20, PinPullMode.PULL_UP)
 
 # MODIFIES: state
-def move():
+def move(time = 0):
     global active, state
     global direction, speed
+    global curr_time, move_elapsed, adjust_elapsed
 
     state = 0
     
-    set_gb(direction, speed, 1 - direction, speed)
+    if (time == 0):
+        set_gb(direction, speed, 1 - direction, speed)
+
+    else:
+        move_elapsed = 0
+
+        last_move_time = control.millis()
+
+        while move_elapsed <= time:
+            set_gb(direction, speed, 1 - direction, speed)
+
+            move_elapsed += curr_time - last_move_time
+
+            if (adjust_elapsed != 0):
+                move_elapsed -= adjust_elapsed
+                adjust_elapsed = 0
+
+        stop()
 
 # MODIFIES: state
 def turn():
@@ -28,12 +46,11 @@ def turn():
     counter2 = 0
 
     while True:
-        set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
-
         basic.pause(80)
 
         stop()
 
+        # Don't delete this
         basic.show_number(counter1 + counter2)
 
         if (counter1 + counter2 >= 4):
@@ -52,6 +69,9 @@ def turn():
         if (counter2 == 1 and ir2_read == 1):
             counter2 = 2
 
+        set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
+
+
 # MODIFIES: state
 def stop():
     global active, state
@@ -68,6 +88,7 @@ def adjust():
     global intersection_seen
     global active, state
     global adjust_speed
+    global last_adjust_time, curr_time, adjust_elapsed
 
     if active != 1:
         return
@@ -85,6 +106,8 @@ def adjust():
     elif (check_angle()):
         stop()
 
+        last_adjust_time = control.millis()
+
         if (ir1_read == 0 and ir2_read == 1):
             set_gb(0, adjust_speed, 0, adjust_speed)
             state = 0
@@ -93,12 +116,14 @@ def adjust():
             set_gb(1, adjust_speed, 1, adjust_speed)
             state = 0
 
-    else:
-        move()
+        adjust_elapsed += curr_time - last_adjust_time
 
 # For use with adjusting
 def check_angle():
     global ir1_read, ir2_read
+
+    # Time for sensors to update
+    basic.pause(20)
 
     if (ir1_read == 1 and ir2_read == 1):
         return 2
@@ -118,6 +143,12 @@ def read_pins():
     ir1_read = pins.digital_read_pin(ir1)
     ir2_read = pins.digital_read_pin(ir2)
     force_read = pins.digital_read_pin(force)
+
+# MODIFIES: curr_time
+def update_time():
+    global curr_time, last_time
+
+    curr_time = control.millis()
 
 # Utility function to set both gearboxes at the same time
 def set_gb(dir1, spd1, dir2, spd2):
@@ -161,7 +192,6 @@ adjust_speed = 120
 
 # Flags (0 -> false, 1 -> true)
 active = 0
-main_ac = 1
 adjust_ac = 1
 intersection_seen = 0
 
@@ -171,9 +201,27 @@ state = 0
 # Intersection count
 intersectionCount = 0
 
+# Current and last time for counting time elapsed
+curr_time = control.millis()
+last_time = control.millis()
+
+# Time it took for robot to finish one move or adjust operation
+move_elapsed = 0
+adjust_elapsed = 0
+
+last_move_time = 0
+last_adjust_time = 0
+
 # Run these functions in the background
 basic.forever(read_pins)
+basic.forever(update_time)
 basic.forever(adjust)
+
+def reset_var():
+    global adjust_ac, intersection_seen
+
+    adjust_ac = 1
+    intersection_seen = 0
 
 def start():
     global force_read
@@ -202,7 +250,7 @@ basic.forever(start)
 
 # Algorithms for each section
 def first():
-    global main_ac, adjust_ac, intersection_seen
+    global adjust_ac, intersection_seen
     global direction, turn_direction
     global intersectionCount
 
@@ -216,13 +264,16 @@ def first():
     move()
 
     while True:
+        basic.pause(20)
         if (check_inter() or intersection_seen):
             intersection_seen = 0
-            stop()
+
+            adjust_ac = 0
 
             # Move forward a little
+            direction = 0
             move()
-            basic.pause(800)
+            basic.pause(900)
 
             stop()
 
@@ -230,22 +281,39 @@ def first():
             turn_direction = 1
             turn()
 
-            move()
-            basic.pause(4000)
+            adjust_ac = 1
 
-            stop()
-
-            direction = 1
+            direction = 0
             move()
-            basic.pause(8000)
+            basic.pause(2000)
 
             stop()
 
             adjust_ac = 0
 
-            direction = 0
+            direction = 1
             move()
             basic.pause(4000)
+
+            stop()
+
+            direction = 0
+            move()
+
+            intersection_seen = 0
+
+            while not (check_inter() or intersection_seen):
+                basic.pause(20)
+
+            intersection_seen = 0
+
+            adjust_ac = 1
+
+            direction = 0
+            move()
+            basic.pause(1000)
+
+            adjust_ac = 0
 
             stop()
 
@@ -256,42 +324,59 @@ def first():
 
             second()
 
-        basic.pause(20)
-
 def second():
-    global main_ac, adjust_ac, intersection_seen
+    global adjust_ac, intersection_seen
     global direction, turn_direction
     global intersectionCount
+
+    reset_var()
 
     basic.show_number(8)
 
     stop()
 
     direction = 0
-
     move()
 
     while True:
+        basic.pause(20)
         if (check_inter() or intersection_seen):
             intersection_seen = 0
-            stop()
 
+            direction = 0
             move()
-            basic.pause(800)
+            basic.pause(900)
 
             stop()
 
             turn_direction = 1
             turn()
 
+            direction = 0
             move()
-            basic.pause(4000)
+            basic.pause(2000)
 
             stop()
 
+            adjust_ac = 0
+
             direction = 1
             move()
-            basic.pause(4000)
+
+            intersection_seen = 0
+            
+            while not (check_inter() or intersection_seen):
+                basic.pause(20)
+
+            intersection_seen = 0
+
+            adjust_ac = 1
+
+            direction = 0
+            move()
+            basic.pause(1000)
+
+            adjust_ac = 0
 
             stop()
 
@@ -301,6 +386,6 @@ def second():
             intersectionCount += 1
 
             third()
-
+        
 def third():
     pass
