@@ -119,6 +119,9 @@ def adjust():
 
         # adjust_elapsed += curr_time - last_adjust_time
 
+    else:
+        move()
+
 # For use with adjusting
 def check_angle():
     global ir1_read, ir2_read

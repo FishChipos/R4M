@@ -78,7 +78,6 @@ function stop() {
 }
 
 //  MODIFIES: turn_direction
-//  adjust_elapsed += curr_time - last_adjust_time
 //  For use with adjusting
 function check_angle(): number {
     
@@ -196,6 +195,9 @@ basic.forever(function adjust() {
             state = 0
         }
         
+    } else {
+        //  adjust_elapsed += curr_time - last_adjust_time
+        move()
     }
     
 })
