@@ -140,12 +140,15 @@ def check_angle():
 
     return 0
 
-# MODIFIES: ir1_read, ir2_read, force_read
+# MODIFIES: ir1_read, ir2_read, ir3_read, ir4_read, force_read
 def read_pins():
-    global ir1_read, ir2_read, force_read
+    global ir1_read, ir2_read, ir3_read, ir4_read, force_read
 
     ir1_read = pins.digital_read_pin(ir1)
     ir2_read = pins.digital_read_pin(ir2)
+    ir3_read = pins.digital_read_pin(ir3)
+    ir4_read = pins.digital_read_pin(ir4)
+
     force_read = pins.digital_read_pin(force)
 
 # MODIFIES: curr_time
@@ -168,29 +171,53 @@ def check_inter():
 
     return False
 
-# Pins
+def check_food():
+    global ir3_read, ir4_read
+
+    if (ir3_read == 0):
+        return 1
+
+    elif (ir4_read == 0):
+        return 1
+
+    else:
+        return 0
+
+# --- PINS ---
 force = DigitalPin.P20
 
+# 2 follow line sensors
 ir1 = DigitalPin.P1
 ir2 = DigitalPin.P8
 
+# Front sensor
+ir3 = DigitalPin.P12
+
+# Back sensor
+ir4 = DigitalPin.P2
+
+# Right gearbox
 gb1_speed = AnalogPin.P14
 gb1_direction = AnalogPin.P13
 
+# Left gearbox
 gb2_speed = AnalogPin.P16
 gb2_direction = AnalogPin.P15
+# ---------
 
 # Pin values
 force_read = 0
 ir1_read = 0
 ir2_read = 0
+ir3_read = 0
+ir4_read = 0
 
 # Directions for turning and moving (0 is right, 1 is left)
 direction = 0
 turn_direction = 0
 
-# Speeds and offsets incase one side is faster then the other (they are)
-speed = 75
+# Speeds
+speed = 80
 turn_speed = 180
 adjust_speed = 120
 
@@ -289,20 +316,39 @@ def first():
 
             direction = 0
             move()
-            basic.pause(2000)
+            
+            while not check_food():
+                basic.pause(20)
 
             stop()
 
             adjust_ac = 0
 
+            direction = 0
+            move()
+            basic.pause(800)
+
+            stop()
+
             direction = 1
             move()
-            basic.pause(4000)
+            
+            basic.pause(1000)
+
+            while not check_food():
+                basic.pause(20)
+
+            stop()
+
+            direction = 1
+            move()
+            basic.pause(800)
 
             stop()
 
             direction = 0
             move()
+            basic.pause(1000)
 
             intersection_seen = 0
 
@@ -347,6 +393,8 @@ def second():
         if (check_inter() or intersection_seen):
             intersection_seen = 0
 
+            adjust_ac = 0
+
             direction = 0
             move()
             basic.pause(900)
@@ -356,13 +404,21 @@ def second():
             turn_direction = 1
             turn()
 
+            adjust_ac = 1
+
             direction = 0
             move()
-            basic.pause(2000)
 
-            stop()
+            while not check_food():
+                basic.pause(20)
 
             adjust_ac = 0
+
+            direction = 0
+            move()
+            basic.pause(800)
+
+            stop()
 
             direction = 1
             move()
@@ -374,13 +430,9 @@ def second():
 
             intersection_seen = 0
 
-            adjust_ac = 1
-
             direction = 0
             move()
-            basic.pause(1000)
-
-            adjust_ac = 0
+            basic.pause(900)
 
             stop()
 
@@ -389,7 +441,7 @@ def second():
 
             intersectionCount += 1
 
-            third()
+            # third()
         
 def third():
     pass
