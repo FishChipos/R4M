@@ -41,7 +41,7 @@ function turn() {
     let counter1 = 0
     let counter2 = 0
     while (true) {
-        basic.pause(80)
+        basic.pause(40)
         stop()
         //  Don't delete this
         basic.showNumber(counter1 + counter2)
@@ -73,6 +73,7 @@ function turn() {
 //  MODIFIES: state
 function stop() {
     
+    basic.pause(10)
     state = 2
     set_gb(0, 0, 0, 0)
 }
@@ -82,10 +83,8 @@ function stop() {
 function check_angle(): number {
     
     //  Time for sensors to update
-    basic.pause(20)
-    if (ir1_read == 1 && ir2_read == 1) {
-        return 2
-    } else if (ir1_read == 0 && ir2_read == 0) {
+    basic.pause(10)
+    if (ir1_read == 0 && ir2_read == 0) {
         return 0
     } else if (ir1_read == 0 || ir2_read == 0) {
         return 1
@@ -111,6 +110,7 @@ function set_gb(dir1: number, spd1: number, dir2: number, spd2: number) {
 function check_inter(): boolean {
     
     if (ir1_read == 1 && ir2_read == 1) {
+        music.playTone(Note.C, 50)
         return true
     }
     
@@ -203,7 +203,7 @@ basic.forever(function adjust() {
         return
     }
     
-    if (check_angle() == 2) {
+    if (check_inter()) {
         intersection_seen = 1
         return
     } else if (check_angle()) {
@@ -219,6 +219,8 @@ basic.forever(function adjust() {
             state = 0
         }
         
+        basic.pause(50)
+        move()
     } else {
         //  adjust_elapsed += curr_time - last_adjust_time
         move()
@@ -258,11 +260,15 @@ function first() {
     
     
     
-    basic.showNumber(9)
-    let main_ac = 0
-    stop()
+    adjust_ac = 0
     direction = 0
     move()
+    basic.pause(500)
+    basic.showNumber(9)
+    adjust_ac = 1
+    direction = 0
+    move()
+    intersection_seen = 0
     while (true) {
         basic.pause(20)
         if (check_inter() || intersection_seen) {
@@ -271,55 +277,51 @@ function first() {
             //  Move forward a little
             direction = 0
             move()
-            basic.pause(900)
+            basic.pause(1500)
             stop()
-            //  Turn left
+            //  Left food
             turn_direction = 1
             turn()
             adjust_ac = 1
             direction = 0
             move()
             while (!check_food()) {
-                basic.pause(20)
+                basic.pause(10)
             }
             stop()
             adjust_ac = 0
             direction = 0
             move()
-            basic.pause(800)
+            basic.pause(1000)
             stop()
+            //  Right food
             direction = 1
             move()
             basic.pause(1000)
             while (!check_food()) {
-                basic.pause(20)
+                basic.pause(10)
             }
             stop()
             direction = 1
             move()
-            basic.pause(800)
+            basic.pause(1000)
             stop()
             direction = 0
             move()
-            basic.pause(1000)
-            intersection_seen = 0
-            while (!(check_inter() || intersection_seen)) {
-                basic.pause(20)
-            }
-            intersection_seen = 0
-            adjust_ac = 1
+            basic.pause(800)
+            adjust_ac = 0
             direction = 0
             move()
-            basic.pause(1000)
-            adjust_ac = 0
+            basic.pause(1300)
             stop()
             turn_direction = 0
             turn()
             intersectionCount += 1
-            second()
+            break
         }
         
     }
+    second()
 }
 
 function second() {
@@ -332,6 +334,7 @@ function second() {
     direction = 0
     move()
     while (true) {
+        move()
         basic.pause(20)
         if (check_inter() || intersection_seen) {
             intersection_seen = 0

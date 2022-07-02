@@ -47,7 +47,7 @@ def turn():
     counter2 = 0
 
     while True:
-        basic.pause(80)
+        basic.pause(40)
 
         stop()
 
@@ -76,6 +76,8 @@ def turn():
 # MODIFIES: state
 def stop():
     global active, state
+
+    basic.pause(10)
     
     state = 2
 
@@ -100,7 +102,7 @@ def adjust():
     if state != 0:
         return
 
-    if (check_angle() == 2):
+    if (check_inter()):
         intersection_seen = 1
         return
 
@@ -117,6 +119,10 @@ def adjust():
             set_gb(1, adjust_speed, 1, adjust_speed)
             state = 0
 
+        basic.pause(50)
+
+        move()
+
         # adjust_elapsed += curr_time - last_adjust_time
 
     else:
@@ -127,12 +133,9 @@ def check_angle():
     global ir1_read, ir2_read
 
     # Time for sensors to update
-    basic.pause(20)
+    basic.pause(10)
 
-    if (ir1_read == 1 and ir2_read == 1):
-        return 2
-
-    elif (ir1_read == 0 and ir2_read == 0):
+    if (ir1_read == 0 and ir2_read == 0):
         return 0
 
     elif (ir1_read == 0 or ir2_read == 0):
@@ -167,6 +170,7 @@ def check_inter():
     global ir1_read, ir2_read
       
     if (ir1_read == 1 and ir2_read == 1):
+        music.play_tone(Note.C, 50)
         return True
 
     return False
@@ -285,14 +289,21 @@ def first():
     global direction, turn_direction
     global intersectionCount
 
-    basic.show_number(9)
-
-    main_ac = 0
-
-    stop()
+    adjust_ac = 0
 
     direction = 0
     move()
+    
+    basic.pause(500)
+
+    basic.show_number(9)
+
+    adjust_ac = 1
+
+    direction = 0
+    move()
+
+    intersection_seen = 0
 
     while True:
         basic.pause(20)
@@ -304,11 +315,11 @@ def first():
             # Move forward a little
             direction = 0
             move()
-            basic.pause(900)
+            basic.pause(1500)
 
             stop()
 
-            # Turn left
+            # Left food
             turn_direction = 1
             turn()
 
@@ -318,7 +329,7 @@ def first():
             move()
             
             while not check_food():
-                basic.pause(20)
+                basic.pause(10)
 
             stop()
 
@@ -326,9 +337,11 @@ def first():
 
             direction = 0
             move()
-            basic.pause(800)
+            basic.pause(1000)
 
             stop()
+
+            # Right food
 
             direction = 1
             move()
@@ -336,34 +349,25 @@ def first():
             basic.pause(1000)
 
             while not check_food():
-                basic.pause(20)
+                basic.pause(10)
 
             stop()
 
             direction = 1
             move()
-            basic.pause(800)
+            basic.pause(1000)
 
             stop()
 
             direction = 0
             move()
-            basic.pause(1000)
+            basic.pause(800)
 
-            intersection_seen = 0
-
-            while not (check_inter() or intersection_seen):
-                basic.pause(20)
-
-            intersection_seen = 0
-
-            adjust_ac = 1
+            adjust_ac = 0
 
             direction = 0
             move()
-            basic.pause(1000)
-
-            adjust_ac = 0
+            basic.pause(1300)
 
             stop()
 
@@ -372,7 +376,9 @@ def first():
 
             intersectionCount += 1
 
-            second()
+            break
+
+    second()
 
 def second():
     global adjust_ac, intersection_seen
@@ -389,6 +395,7 @@ def second():
     move()
 
     while True:
+        move()
         basic.pause(20)
         if (check_inter() or intersection_seen):
             intersection_seen = 0
