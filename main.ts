@@ -38,36 +38,45 @@ function turn() {
     
     
     state = 1
+    let ir1_read_last = ir1_read
+    let ir2_read_last = ir2_read
     let counter1 = 0
     let counter2 = 0
-    while (true) {
+    let counter = 0
+    while (counter <= 16) {
         basic.pause(40)
         stop()
         //  Don't delete this
         basic.showNumber(counter1 + counter2)
-        if (counter1 + counter2 >= 4) {
+        if (counter1 + counter2 >= 4 && counter >= 14) {
             stop()
             return
         }
         
-        if (counter1 == 0 && ir1_read == 0) {
-            counter1 = 1
+        if (ir1_read != ir1_read_last) {
+            ir1_read_last = ir1_read
+            if (counter1 == 0) {
+                counter1 = 1
+            } else if (counter1 == 1) {
+                counter1 = 2
+            }
+            
         }
         
-        if (counter1 == 1 && ir1_read == 1) {
-            counter1 = 2
-        }
-        
-        if (counter2 == 0 && ir2_read == 0) {
-            counter2 = 1
-        }
-        
-        if (counter2 == 1 && ir2_read == 1) {
-            counter2 = 2
+        if (ir2_read != ir2_read_last) {
+            ir2_read_last = ir2_read
+            if (counter2 == 0) {
+                counter2 = 1
+            } else if (counter2 == 1) {
+                counter2 = 2
+            }
+            
         }
         
         set_gb(turn_direction, turn_speed, turn_direction, turn_speed)
+        counter += 1
     }
+    stop()
 }
 
 //  MODIFIES: state
@@ -136,8 +145,10 @@ let ir1 = DigitalPin.P1
 let ir2 = DigitalPin.P8
 //  Front sensor
 let ir3 = DigitalPin.P12
+let ir5 = DigitalPin.P0
 //  Back sensor
 let ir4 = DigitalPin.P2
+let ir6 = DigitalPin.P0
 //  Right gearbox
 let gb1_speed = AnalogPin.P14
 let gb1_direction = AnalogPin.P13
@@ -151,11 +162,13 @@ let ir1_read = 0
 let ir2_read = 0
 let ir3_read = 0
 let ir4_read = 0
+let ir5_read = 0
+let ir6_read = 0
 //  Directions for turning and moving (0 is right, 1 is left)
 let direction = 0
 let turn_direction = 0
 //  Speeds
-let speed = 100
+let speed = 80
 let turn_speed = 210
 let adjust_speed = 140
 //  Flags (0 -> false, 1 -> true)
@@ -219,7 +232,7 @@ basic.forever(function adjust() {
             state = 0
         }
         
-        basic.pause(50)
+        basic.pause(100)
         move()
     } else {
         //  adjust_elapsed += curr_time - last_adjust_time
@@ -270,6 +283,7 @@ function first() {
     move()
     intersection_seen = 0
     while (true) {
+        move()
         basic.pause(20)
         if (check_inter() || intersection_seen) {
             intersection_seen = 0
@@ -277,7 +291,7 @@ function first() {
             //  Move forward a little
             direction = 0
             move()
-            basic.pause(1500)
+            basic.pause(1200)
             stop()
             //  Left food
             turn_direction = 1
@@ -285,6 +299,7 @@ function first() {
             adjust_ac = 1
             direction = 0
             move()
+            basic.pause(600)
             while (!check_food()) {
                 basic.pause(10)
             }
@@ -304,11 +319,11 @@ function first() {
             stop()
             direction = 1
             move()
-            basic.pause(1000)
+            basic.pause(900)
             stop()
             direction = 0
             move()
-            basic.pause(800)
+            basic.pause(700)
             adjust_ac = 0
             direction = 0
             move()
@@ -341,7 +356,7 @@ function second() {
             adjust_ac = 0
             direction = 0
             move()
-            basic.pause(900)
+            basic.pause(1000)
             stop()
             turn_direction = 1
             turn()
@@ -354,7 +369,7 @@ function second() {
             adjust_ac = 0
             direction = 0
             move()
-            basic.pause(800)
+            basic.pause(2000)
             stop()
             direction = 1
             move()
@@ -365,7 +380,7 @@ function second() {
             intersection_seen = 0
             direction = 0
             move()
-            basic.pause(900)
+            basic.pause(1300)
             stop()
             turn_direction = 0
             turn()
@@ -393,7 +408,7 @@ function third() {
             adjust_ac = 0
             direction = 0
             move()
-            basic.pause(900)
+            basic.pause(1000)
             stop()
             turn_direction = 1
             turn()
@@ -406,7 +421,7 @@ function third() {
             adjust_ac = 0
             direction = 0
             move()
-            basic.pause(800)
+            basic.pause(1500)
             stop()
             direction = 1
             move()
@@ -417,7 +432,7 @@ function third() {
             intersection_seen = 0
             direction = 0
             move()
-            basic.pause(900)
+            basic.pause(1300)
             stop()
             turn_direction = 0
             turn()
@@ -438,9 +453,13 @@ function fourth() {
     direction = 0
     move()
     while (true) {
+        move()
         basic.pause(20)
         if (check_inter() || intersection_seen) {
             stop()
+            direction = 0
+            move()
+            basic.pause(1200)
             turn_direction = 1
             turn()
             stop()
@@ -451,16 +470,18 @@ function fourth() {
             }
             direction = 0
             move()
-            basic.pause(500)
+            basic.pause(1500)
             stop()
             direction = 1
             move()
-            while (!(check_inter() || intersection_seen)) {
-                basic.pause(20)
+            while (!check_food()) {
+                basic.pause(10)
             }
-            direction = 1
+            basic.pause(1500)
+            stop()
+            direction = 0
             move()
-            basic.pause(1000)
+            basic.pause(1200)
             stop()
             turn_direction = 0
             turn()
