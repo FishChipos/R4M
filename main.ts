@@ -155,9 +155,9 @@ let ir4_read = 0
 let direction = 0
 let turn_direction = 0
 //  Speeds
-let speed = 80
-let turn_speed = 180
-let adjust_speed = 120
+let speed = 100
+let turn_speed = 210
+let adjust_speed = 140
 //  Flags (0 -> false, 1 -> true)
 let active = 0
 let adjust_ac = 1
@@ -165,7 +165,7 @@ let intersection_seen = 0
 //  State (0 -> moving, 1 -> turning, 2 -> still, 3 -> special)
 let state = 0
 //  Intersection count
-let intersectionCount = 0
+let intersection_count = 0
 //  Current and last time for counting time elapsed
 let curr_time = control.millis()
 let last_time = control.millis()
@@ -316,7 +316,7 @@ function first() {
             stop()
             turn_direction = 0
             turn()
-            intersectionCount += 1
+            intersection_count += 1
             break
         }
         
@@ -369,14 +369,108 @@ function second() {
             stop()
             turn_direction = 0
             turn()
-            intersectionCount += 1
+            intersection_count += 1
         }
         
     }
+    third()
 }
 
-//  third()
 function third() {
+    
+    
+    
+    reset_var()
+    basic.showNumber(8)
+    stop()
+    direction = 0
+    move()
+    while (true) {
+        move()
+        basic.pause(20)
+        if (check_inter() || intersection_seen) {
+            intersection_seen = 0
+            adjust_ac = 0
+            direction = 0
+            move()
+            basic.pause(900)
+            stop()
+            turn_direction = 1
+            turn()
+            adjust_ac = 1
+            direction = 0
+            move()
+            while (!check_food()) {
+                basic.pause(20)
+            }
+            adjust_ac = 0
+            direction = 0
+            move()
+            basic.pause(800)
+            stop()
+            direction = 1
+            move()
+            intersection_seen = 0
+            while (!(check_inter() || intersection_seen)) {
+                basic.pause(20)
+            }
+            intersection_seen = 0
+            direction = 0
+            move()
+            basic.pause(900)
+            stop()
+            turn_direction = 0
+            turn()
+            intersection_count += 1
+        }
+        
+    }
+    fourth()
+}
+
+function fourth() {
+    
+    
+    
+    reset_var()
+    basic.showNumber(8)
+    stop()
+    direction = 0
+    move()
+    while (true) {
+        basic.pause(20)
+        if (check_inter() || intersection_seen) {
+            stop()
+            turn_direction = 1
+            turn()
+            stop()
+            direction = 0
+            move()
+            while (!check_food()) {
+                basic.pause(20)
+            }
+            direction = 0
+            move()
+            basic.pause(500)
+            stop()
+            direction = 1
+            move()
+            while (!(check_inter() || intersection_seen)) {
+                basic.pause(20)
+            }
+            direction = 1
+            move()
+            basic.pause(1000)
+            stop()
+            turn_direction = 0
+            turn()
+        }
+        
+    }
+    last()
+}
+
+function last() {
     
 }
 
