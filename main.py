@@ -37,7 +37,7 @@ def move():
 
 # MODIFIES: state
 def turn():
-    global active, state
+    global active, state, count 
     global turn_direction, turn_speed
     global ir1_read, ir2_read
 
@@ -51,7 +51,7 @@ def turn():
 
     counter = 0
 
-    while counter <= 16:
+    while counter != count :
         basic.pause(40)
 
         stop()
@@ -59,7 +59,7 @@ def turn():
         # Don't delete this
         basic.show_number(counter1 + counter2)
 
-        if (counter1 + counter2 >= 4 and counter >= 14):
+        if (counter1 + counter2 >= 4 and counter >= 10):
             stop()
             return
 
@@ -239,9 +239,9 @@ direction = 0
 turn_direction = 0
 
 # Speeds
-speed = 80
-turn_speed = 210
-adjust_speed = 140
+speed = 78
+turn_speed = 220
+adjust_speed = 110
 
 # Flags (0 -> false, 1 -> true)
 active = 0
@@ -264,6 +264,8 @@ adjust_elapsed = 0
 
 last_move_time = 0
 last_adjust_time = 0
+
+count = 0 
 
 # Run these functions in the background
 basic.forever(read_pins)
@@ -303,7 +305,7 @@ basic.forever(start)
 
 # Algorithms for each section
 def first():
-    global adjust_ac, intersection_seen
+    global adjust_ac, intersection_seen, count 
     global direction, turn_direction
     global intersection_count
 
@@ -339,6 +341,7 @@ def first():
             stop()
 
             # Left food
+            count = 10 
             turn_direction = 1
             turn()
 
@@ -392,6 +395,8 @@ def first():
 
             stop()
 
+            count = 11 
+
             turn_direction = 0
             turn()
 
@@ -404,7 +409,7 @@ def first():
 def second():
     global adjust_ac, intersection_seen
     global direction, turn_direction
-    global intersection_count
+    global intersection_count, count 
 
     reset_var()
 
@@ -425,10 +430,10 @@ def second():
 
             direction = 0
             move()
-            basic.pause(1000)
+            basic.pause(1400)
 
             stop()
-
+            count = 12
             turn_direction = 1
             turn()
 
@@ -450,13 +455,8 @@ def second():
 
             direction = 1
             move()
-
-            intersection_seen = 0
             
-            while not (check_inter() or intersection_seen):
-                basic.pause(20)
-
-            intersection_seen = 0
+            basic.pause(3000)
 
             direction = 0
             move()
@@ -474,11 +474,11 @@ def second():
 def third():
     global adjust_ac, intersection_seen
     global direction, turn_direction
-    global intersection_count
+    global intersection_count, count 
 
     reset_var()
 
-    basic.show_number(8)
+    basic.show_number(7)
 
     stop()
 
@@ -495,9 +495,11 @@ def third():
 
             direction = 0
             move()
-            basic.pause(1000)
+            basic.pause(1600)
 
             stop()
+
+            count = 12
 
             turn_direction = 1
             turn()
@@ -520,17 +522,11 @@ def third():
 
             direction = 1
             move()
-
-            intersection_seen = 0
-            
-            while not (check_inter() or intersection_seen):
-                basic.pause(20)
-
-            intersection_seen = 0
+            basic.pause(3000)
 
             direction = 0
             move()
-            basic.pause(1300)
+            basic.pause(1500)
 
             stop()
 
@@ -544,11 +540,17 @@ def third():
 def fourth():
     global adjust_ac, intersection_seen
     global direction, turn_direction
-    global intersection_count
+    global intersection_count, count 
 
     reset_var()
 
-    basic.show_number(8)
+    basic.show_number(6)
+
+    stop()
+
+    direction = 1
+    move()  
+    basic.pause(1000)
 
     stop()
 
@@ -563,7 +565,7 @@ def fourth():
 
             direction = 0
             move()
-            basic.pause(1200)
+            basic.pause(1500)
             
             turn_direction = 1
             turn()
@@ -590,9 +592,14 @@ def fourth():
 
             basic.pause(1500)
             stop() 
+
             direction = 0
             move()
-            basic.pause(1200)
+
+            while not (check_inter() or intersection_seen):
+                basic.pause(20)
+
+            basic.pause(1400)
 
             stop()
 
@@ -602,4 +609,44 @@ def fourth():
     last()
 
 def last():
-    pass
+    global adjust_ac, intersection_seen
+    global direction, turn_direction
+    global intersection_count, count
+
+    reset_var()
+
+    basic.show_number(5)
+
+    stop()
+
+    direction = 0
+    move()
+    
+    while True:
+        move()
+        basic.pause(20)
+        if check_inter() or intersection_seen:
+            stop()
+
+            direction = 0
+            move()
+            basic.pause(1500)
+            
+            turn_direction = 1
+            turn()
+
+            stop()
+
+            direction = 0
+            move()
+
+            intersection_seen = 0
+            while not (check_inter() or intersection_seen):
+                basic.pause(20)
+
+            basic.pause(1500)
+
+            stop()
+
+    active = 0
+    return

@@ -43,12 +43,12 @@ function turn() {
     let counter1 = 0
     let counter2 = 0
     let counter = 0
-    while (counter <= 16) {
+    while (counter != count) {
         basic.pause(40)
         stop()
         //  Don't delete this
         basic.showNumber(counter1 + counter2)
-        if (counter1 + counter2 >= 4 && counter >= 14) {
+        if (counter1 + counter2 >= 4 && counter >= 10) {
             stop()
             return
         }
@@ -168,9 +168,9 @@ let ir6_read = 0
 let direction = 0
 let turn_direction = 0
 //  Speeds
-let speed = 80
-let turn_speed = 210
-let adjust_speed = 140
+let speed = 78
+let turn_speed = 220
+let adjust_speed = 110
 //  Flags (0 -> false, 1 -> true)
 let active = 0
 let adjust_ac = 1
@@ -187,6 +187,7 @@ let move_elapsed = 0
 let adjust_elapsed = 0
 let last_move_time = 0
 let last_adjust_time = 0
+let count = 0
 //  Run these functions in the background
 basic.forever(function read_pins() {
     
@@ -294,6 +295,7 @@ function first() {
             basic.pause(1200)
             stop()
             //  Left food
+            count = 10
             turn_direction = 1
             turn()
             adjust_ac = 1
@@ -329,6 +331,7 @@ function first() {
             move()
             basic.pause(1300)
             stop()
+            count = 11
             turn_direction = 0
             turn()
             intersection_count += 1
@@ -356,8 +359,9 @@ function second() {
             adjust_ac = 0
             direction = 0
             move()
-            basic.pause(1000)
+            basic.pause(1400)
             stop()
+            count = 12
             turn_direction = 1
             turn()
             adjust_ac = 1
@@ -373,11 +377,7 @@ function second() {
             stop()
             direction = 1
             move()
-            intersection_seen = 0
-            while (!(check_inter() || intersection_seen)) {
-                basic.pause(20)
-            }
-            intersection_seen = 0
+            basic.pause(3000)
             direction = 0
             move()
             basic.pause(1300)
@@ -396,7 +396,7 @@ function third() {
     
     
     reset_var()
-    basic.showNumber(8)
+    basic.showNumber(7)
     stop()
     direction = 0
     move()
@@ -408,8 +408,9 @@ function third() {
             adjust_ac = 0
             direction = 0
             move()
-            basic.pause(1000)
+            basic.pause(1600)
             stop()
+            count = 12
             turn_direction = 1
             turn()
             adjust_ac = 1
@@ -425,14 +426,10 @@ function third() {
             stop()
             direction = 1
             move()
-            intersection_seen = 0
-            while (!(check_inter() || intersection_seen)) {
-                basic.pause(20)
-            }
-            intersection_seen = 0
+            basic.pause(3000)
             direction = 0
             move()
-            basic.pause(1300)
+            basic.pause(1500)
             stop()
             turn_direction = 0
             turn()
@@ -448,7 +445,11 @@ function fourth() {
     
     
     reset_var()
-    basic.showNumber(8)
+    basic.showNumber(6)
+    stop()
+    direction = 1
+    move()
+    basic.pause(1000)
     stop()
     direction = 0
     move()
@@ -459,7 +460,7 @@ function fourth() {
             stop()
             direction = 0
             move()
-            basic.pause(1200)
+            basic.pause(1500)
             turn_direction = 1
             turn()
             stop()
@@ -481,7 +482,10 @@ function fourth() {
             stop()
             direction = 0
             move()
-            basic.pause(1200)
+            while (!(check_inter() || intersection_seen)) {
+                basic.pause(20)
+            }
+            basic.pause(1400)
             stop()
             turn_direction = 0
             turn()
@@ -493,5 +497,36 @@ function fourth() {
 
 function last() {
     
+    
+    
+    reset_var()
+    basic.showNumber(5)
+    stop()
+    direction = 0
+    move()
+    while (true) {
+        move()
+        basic.pause(20)
+        if (check_inter() || intersection_seen) {
+            stop()
+            direction = 0
+            move()
+            basic.pause(1500)
+            turn_direction = 1
+            turn()
+            stop()
+            direction = 0
+            move()
+            intersection_seen = 0
+            while (!(check_inter() || intersection_seen)) {
+                basic.pause(20)
+            }
+            basic.pause(1500)
+            stop()
+        }
+        
+    }
+    let active = 0
+    return
 }
 
